@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <link rel="stylesheet" href="./style.css">
+</head>
+<body>
+    <main>
+        <canvas id="painting" height="200" width="300"></canvas>
+        <aside>
+            <input type="button" value="Clear" onclick="clearCanvas()">
+            <select id="mode">
+                <option value="brush">Brush</option>
+                <option value="eraser">Eraser</option>
+                <option value="bucket">Bucket</option>
+            </select>
+            <label>
+                Brush size
+                <input type="range" min="1" max="15" id="radius">
+            </label>
+            <input type="color"  id="fillColor">
+        </aside>
+    </main>
+    <script src="./script.js"></script>
+</body>
+</html>
