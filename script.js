@@ -114,6 +114,8 @@ const startTools = {
 }
 
 async function paint(event, isTouch, currentToolList) {
+    event.preventDefault();
+
     if (paintDebounce == true || activeClick == false) return;
     
     if (currentToolList == undefined) {
