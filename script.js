@@ -45,7 +45,12 @@ function pushHistory(overrideImage) {
     let savedImage = imageData
     if (overrideImage != undefined) savedImage = overrideImage
 
+    imageHistory.splice(imageHistory.length - (currentHistoryPosition - 1))
+    redoButton.disabled = true
     undoButton.disabled = false
+
+    currentHistoryPosition = 1
+
     imageHistory.push(savedImage)
     if (imageHistory.length > 5) imageHistory.shift()
 }
