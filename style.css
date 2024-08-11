@@ -2,6 +2,7 @@ body {
     margin: 0;
     height: 100dvh;
     overscroll-behavior: contain;
+    touch-action: none;
 
     --onBackground: #f5fafd;
     --outline: #ffffff2d;
