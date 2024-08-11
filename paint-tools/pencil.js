@@ -1,9 +1,9 @@
 import { setPixel } from "./utils.js";
 
-function pencil(pixels, x, y, color, weight) {
+function pencil(pixels, x, y, color, radius, weight) {
     let currentPixels = pixels
 
-    if (weight == 1) {
+    if (radius == 1) {
         currentPixels = setPixel(
             pixels,
             x,
@@ -15,10 +15,10 @@ function pencil(pixels, x, y, color, weight) {
     }
 
     // creates the square from top to bottom
-    for (let targetY = 0; targetY < weight; targetY++) {
+    for (let targetY = 0; targetY < radius; targetY++) {
         
         // creates a line
-        for (let currentX = (x - Math.floor(weight/2)); currentX < (x + Math.floor(weight/2)); currentX++) {
+        for (let currentX = (x - Math.floor(radius/2)); currentX < (x + Math.floor(radius/2)); currentX++) {
             
 
             currentPixels = setPixel(

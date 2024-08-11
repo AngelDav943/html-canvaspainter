@@ -1,3 +1,11 @@
+import brush from "./paint-tools/brush.js";
+import flood_fill from "./paint-tools/bucket.js";
+import ditherBrush from "./paint-tools/ditherBrush.js";
+import eraser from "./paint-tools/eraser.js";
+import pencil from "./paint-tools/pencil.js";
+import spray from "./paint-tools/spray.js";
+import { hexToRGBA } from "./paint-tools/utils.js";
+
 const canvas = document.getElementById("painting");
 const context = canvas.getContext("2d", {
     willReadFrequently: true
@@ -26,16 +34,9 @@ for (const select of selects) {
         }
     }
 }
-console.log(selectValues)
 
 const colorValue = document.getElementById("fillColor")
-
-import brush from "./paint-tools/brush.js";
-import flood_fill from "./paint-tools/bucket.js";
-import eraser from "./paint-tools/eraser.js";
-import pencil from "./paint-tools/pencil.js";
-import spray from "./paint-tools/spray.js";
-import { hexToRGBA } from "./paint-tools/utils.js";
+const intensityValue = document.getElementById("intensity")
 
 const undoButton = document.getElementById("undo")
 const redoButton = document.getElementById("redo")
@@ -96,6 +97,7 @@ let lastTouches = {};
 const tools = {
     "pencil": pencil,
     "brush": brush,
+    "ditherBrush": ditherBrush,
     "spray": spray,
     "eraser": eraser
 }
@@ -159,7 +161,7 @@ async function paint(event, isTouch, currentToolList) {
     const distance = Math.sqrt(diffX * diffX + diffY * diffY)
     const steps = Math.max(1, Math.floor(distance * 2))
     
-    const weight = Math.floor(parseInt(selectValues.radius) * force)
+    const sizeRadius = Math.floor(parseInt(selectValues.radius) * force)
 
     // makes an approximated path from the last position to the new position
     for (let t = 0; t < steps; t++) {
@@ -173,7 +175,8 @@ async function paint(event, isTouch, currentToolList) {
             newPixels,  // pixels
             lerpX, lerpY, // coordinates
             hexToRGBA(colorValue.value), // color
-            weight  // weight
+            sizeRadius,  // radius
+            intensityValue.value // weight
         );
     }
 

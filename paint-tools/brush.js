@@ -1,13 +1,13 @@
 import { setPixel } from "./utils.js";
 
-function brush(pixels, x, y, color, weight) {
+function brush(pixels, x, y, color, radius, weight) {
     let currentPixels = pixels;
 
     // creates the circle from top to bottom
-    for (let targetY = -weight; targetY < weight; targetY++) {
+    for (let targetY = -radius; targetY < radius; targetY++) {
         // calculates the line width with this formula
         // weight used for radius
-        const width = Math.floor(Math.sqrt((weight*weight) - (targetY * targetY)))
+        const width = Math.floor(Math.sqrt((radius*radius) - (targetY * targetY)))
 
         // creates a line
         for (let currentX = (x-width); currentX < (x+width); currentX++) {

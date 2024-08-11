@@ -1,10 +1,7 @@
 import { setPixel } from "./utils.js";
 
-async function spray(pixels, x, y, color, radius, weight) {
+function ditherBrush(pixels, x, y, color, radius, weight) {
     let currentPixels = pixels;
-
-    const max = 255
-    let point = false;
 
     // creates the circle from top to bottom
     for (let targetY = -radius; targetY < radius; targetY++) {
@@ -14,28 +11,25 @@ async function spray(pixels, x, y, color, radius, weight) {
 
         // creates a line
         for (let currentX = (x-width); currentX < (x+width); currentX++) {
+            const currentY = (targetY + y)
 
-            let newAlpha = Math.floor(Math.random() * max)
-            const newColor = {
+            const targetColor = {
                 ...color,
-                a: newAlpha
+                a: color.a
             }
-            if (newColor.a < 254 || point == true) {
-                newColor.a = 0
-            }
-            newColor.a = Math.ceil(newColor.a / max) * 255
-            if (newColor.a == 255) point = true
+
+            if (currentX % weight != 0) targetColor.a = 0
+            if (currentY % weight != 0) targetColor.a = 0
 
             currentPixels = setPixel(
                 currentPixels,
                 currentX,
-                (targetY + y),
-                newColor
+                currentY,
+                targetColor
             );
         }
     }
-
     return currentPixels;
 }
 
-export default spray;
+export default ditherBrush;
