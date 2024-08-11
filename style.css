@@ -1,6 +1,7 @@
 body {
     margin: 0;
     height: 100dvh;
+    overscroll-behavior: contain;
 
     --onBackground: #f5fafd;
     --outline: #ffffff2d;
