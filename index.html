@@ -18,14 +18,18 @@
             </div>
             <div class="select" id="radius" aria-current="10">
                 <button value="1">Small</button>
-                <button value="10">Medium</button>
-                <button value="15">Big</button>
+                <button value="5">Medium</button>
+                <button value="10">Big</button>
                 <button value="20">Huge</button>
             </div>
         </nav>
         <canvas id="painting" height="200" width="400"></canvas>
         <nav>
             <input type="button" value="Clear" id="clearCanvas">
+            <div class="row">
+                <input type="button" value="Undo" id="undo" disabled>
+                <input type="button" value="Redo" id="redo" disabled>
+            </div>
             <input type="color" id="fillColor">
         </nav>
     </main>

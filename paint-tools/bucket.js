@@ -1,13 +1,11 @@
 var timeout_id;
 
-function flood_fill(the_canvas, the_canvas_context, x, y, color, original_color, pixels, pixel_stack) {
+async function flood_fill(the_canvas, the_canvas_context, x, y, color, original_color, pixels, pixel_stack) {
     original_color = typeof (original_color) === 'undefined' ? null : original_color;
     pixels = typeof (pixels) === 'undefined' ? null : pixels;
     pixel_stack = typeof (pixel_stack) === 'undefined' ? null : pixel_stack;
 
     clearTimeout(timeout_id);
-
-    console.log(pixels)
 
     if (pixels === null) {
         pixels = the_canvas_context.getImageData(0, 0, the_canvas.width, the_canvas.height);
@@ -88,17 +86,22 @@ function flood_fill(the_canvas, the_canvas_context, x, y, color, original_color,
         }
     }
 
-    the_canvas_context.putImageData(pixels, 0, 0);
     if (pixel_stack.length > 0) {
         new_pixel = pixel_stack.shift();
-        console.log("timeout")
-        timeout_id = setTimeout(function () { flood_fill(the_canvas, the_canvas_context, new_pixel.x, new_pixel.y, color, original_color, pixels, pixel_stack); }, 45);
+        the_canvas_context.putImageData(pixels, 0, 0);
+        return new Promise((resolve) => {
+            timeout_id = setTimeout(function () { 
+                resolve(
+                    flood_fill(the_canvas, the_canvas_context, new_pixel.x, new_pixel.y, color, original_color, pixels, pixel_stack)
+                );
+            }, 45);
+        })
     } else {
+        console.log("end")
         clearTimeout(timeout_id)
         timeout_id = undefined;
+        return pixels
     }
-
-    return pixels
 }
 
 function is_in_pixel_stack(x, y, pixel_stack) {

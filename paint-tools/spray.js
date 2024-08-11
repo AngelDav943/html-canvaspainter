@@ -11,7 +11,7 @@ async function delay(milliseconds) {
 async function spray(pixels, x, y, color, weight) {
     let currentPixels = pixels;
 
-    const max = 500
+    const max = 255
 
     // creates the circle from top to bottom
     for (let targetY = -weight; targetY < weight; targetY++) {
@@ -27,7 +27,7 @@ async function spray(pixels, x, y, color, weight) {
                 ...color,
                 a: newAlpha
             }
-            if (newColor.a < 499) newColor.a = 0
+            if (newColor.a < 254) newColor.a = 0
             newColor.a = Math.ceil(newColor.a / max) * 255
 
             currentPixels = setPixel(

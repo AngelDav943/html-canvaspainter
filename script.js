@@ -4,6 +4,7 @@ const context = canvas.getContext("2d", {
 });
 
 let imageData = context.getImageData(0, 0, canvas.width, canvas.height);
+let imageHistory = [imageData]
 
 const selects = document.querySelectorAll("div.select")
 const selectValues = {}
@@ -36,15 +37,55 @@ import pencil from "./paint-tools/pencil.js";
 import spray from "./paint-tools/spray.js";
 import { hexToRGBA } from "./paint-tools/utils.js";
 
+const undoButton = document.getElementById("undo")
+const redoButton = document.getElementById("redo")
+
+let currentHistoryPosition = 1
+function pushHistory(overrideImage) {
+    let savedImage = imageData
+    if (overrideImage != undefined) savedImage = overrideImage
+
+    undoButton.disabled = false
+    imageHistory.push(savedImage)
+    if (imageHistory.length > 5) imageHistory.shift()
+}
+
+function moveHistory(position) {
+    currentHistoryPosition = Math.max(1, Math.min(imageHistory.length, currentHistoryPosition - position))
+
+    if (currentHistoryPosition == imageHistory.length) {
+        undoButton.disabled = true
+    } else {
+        undoButton.disabled = false
+    }
+
+    if (currentHistoryPosition > 1) {
+        redoButton.disabled = false
+    } else {
+        redoButton.disabled = true
+    }
+
+    console.log(imageHistory, currentHistoryPosition)
+    let newImageData = imageHistory[imageHistory.length - currentHistoryPosition]
+
+    if (newImageData == undefined) return
+
+    context.putImageData(newImageData, 0, 0);
+}
+undoButton.onclick = () => moveHistory(-1)
+redoButton.onclick = () => moveHistory(1)
+
 function clearCanvas() {
     let newImageData = new ImageData(imageData.width, imageData.height)
     imageData = newImageData
     context.putImageData(newImageData, 0, 0);
+    pushHistory()
 }
 document.getElementById("clearCanvas").onclick = clearCanvas
 
 let activeClick = false;
 let lastPos = undefined;
+let paintDebounce = false;
 let lastTouches = {};
 
 const tools = {
@@ -55,19 +96,23 @@ const tools = {
 }
 
 const startTools = {
-    "bucket": (pixels, x, y, color, weight) => {
-        flood_fill(canvas, context, x, y, color)
+    "bucket": async (pixels, x, y, color, weight) =>  {
+        const newPixels = await flood_fill(canvas, context, x, y, color)
+        pushHistory(newPixels)
+        return newPixels
     }
 }
 
 async function paint(event, isTouch, currentToolList) {
-    if (activeClick == false) return;
+    if (paintDebounce == true || activeClick == false) return;
     
     if (currentToolList == undefined) {
         currentToolList = tools
     }
 
     if (currentToolList[selectValues.mode] == undefined) return;
+
+    paintDebounce = true
 
     let identifier = -1
     if (event.identifier != undefined) {
@@ -108,7 +153,6 @@ async function paint(event, isTouch, currentToolList) {
     const steps = Math.max(1, Math.floor(distance * 2))
     
     const weight = Math.floor(parseInt(selectValues.radius) * force)
-    console.log(weight)
 
     // makes an approximated path from the last position to the new position
     for (let t = 0; t < steps; t++) {
@@ -126,33 +170,40 @@ async function paint(event, isTouch, currentToolList) {
         );
     }
 
-    setLastPosition()
-    if (newPixels != undefined) context.putImageData(newPixels, 0, 0);
+    paintDebounce = false
+    if (newPixels != undefined) {
+        context.putImageData(newPixels, 0, 0);
+        setLastPosition()
+    }
 }
 
 function setMouseStatus(event, status) {
+    if (status == activeClick) return;
+
     if (status == true) {
         activeClick = true;
 
+        
         if (startTools[selectValues.mode] != undefined) {
             paint(event, false, startTools)
             activeClick = false;
             return
         }
-
-        console.log("painting", event.identifier != undefined)
+        
         paint(event, event.identifier != undefined, tools);
         
         return;
     }
+    
+    pushHistory()
 
     lastPos = undefined;
     activeClick = false;
 }
 
 canvas.addEventListener("mouseleave", (e) => setMouseStatus(e, false));
-canvas.addEventListener("mouseout", (e) => setMouseStatus(e, false));
 canvas.addEventListener("mouseup", (e) => setMouseStatus(e, false));
+
 canvas.addEventListener("mousedown", (e) => setMouseStatus(e, true));
 canvas.addEventListener("mousemove", paint);
 
@@ -165,11 +216,6 @@ function convertTouchToMouse(TouchEvent, callback) {
             offsetX: touch.clientX - canvas.offsetLeft,
             offsetY: touch.clientY - canvas.offsetTop
         }
-
-        const x = (offset.offsetX / canvas.offsetWidth) * canvas.width;
-        const y = (offset.offsetY / canvas.offsetHeight) * canvas.height;
-
-        // lastTouches[touch.identifier] = { y: y, x: x }
 
         callback({
             ...touch,
