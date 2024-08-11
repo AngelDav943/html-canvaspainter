@@ -104,6 +104,9 @@ const startTools = {
     "bucket": async (pixels, x, y, color, weight) =>  {
         const newPixels = await flood_fill(canvas, context, x, y, color)
         pushHistory(newPixels)
+        
+        activeClick = false;
+        
         return newPixels
     }
 }
@@ -134,7 +137,6 @@ async function paint(event, isTouch, currentToolList) {
         } else {
             lastPos = { y: y, x: x }
         }
-        return { y: y, x: x };
     }
     
     const x = Math.floor((event.offsetX / canvas.offsetWidth) * canvas.width);
@@ -150,7 +152,7 @@ async function paint(event, isTouch, currentToolList) {
     imageData = context.getImageData(0, 0, canvas.width, canvas.height)
     let newPixels = imageData
 
-    if (currentLast == null) currentLast = setLastPosition();
+    if (currentLast == null) currentLast = { y: y, x: x };
     
     const diffX = x - currentLast?.x
     const diffY = y - currentLast?.y
@@ -178,7 +180,7 @@ async function paint(event, isTouch, currentToolList) {
     paintDebounce = false
     if (newPixels != undefined) {
         context.putImageData(newPixels, 0, 0);
-        setLastPosition()
+        if (activeClick == true) setLastPosition()
     }
 }
 

@@ -1,17 +1,10 @@
 import { setPixel } from "./utils.js";
 
-async function delay(milliseconds) {
-    return new Promise((resolve) => {
-        setTimeout(() => {
-            resolve(true)
-        }, milliseconds)
-    })
-}
-
 async function spray(pixels, x, y, color, weight) {
     let currentPixels = pixels;
 
     const max = 255
+    let point = false;
 
     // creates the circle from top to bottom
     for (let targetY = -weight; targetY < weight; targetY++) {
@@ -27,8 +20,11 @@ async function spray(pixels, x, y, color, weight) {
                 ...color,
                 a: newAlpha
             }
-            if (newColor.a < 254) newColor.a = 0
+            if (newColor.a < 254 || point == true) {
+                newColor.a = 0
+            }
             newColor.a = Math.ceil(newColor.a / max) * 255
+            if (newColor.a == 255) point = true
 
             currentPixels = setPixel(
                 currentPixels,
