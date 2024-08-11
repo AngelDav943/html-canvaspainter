@@ -8,21 +8,27 @@
 </head>
 <body>
     <main>
-        <canvas id="painting" height="200" width="300"></canvas>
-        <aside>
-            <input type="button" value="Clear" onclick="clearCanvas()">
-            <select id="mode">
-                <option value="brush">Brush</option>
-                <option value="eraser">Eraser</option>
-                <option value="bucket">Bucket</option>
-            </select>
-            <label>
-                Brush size
-                <input type="range" min="1" max="15" id="radius">
-            </label>
-            <input type="color"  id="fillColor">
-        </aside>
+        <nav>
+            <div class="select" id="mode" aria-current="pencil">
+                <button value="pencil">Pencil</button>
+                <button value="brush">Brush</button>
+                <button value="spray">Spray</button>
+                <button value="bucket">Bucket</button>
+                <button value="eraser">Eraser</button>
+            </div>
+            <div class="select" id="radius" aria-current="10">
+                <button value="1">Small</button>
+                <button value="10">Medium</button>
+                <button value="15">Big</button>
+                <button value="20">Huge</button>
+            </div>
+        </nav>
+        <canvas id="painting" height="200" width="400"></canvas>
+        <nav>
+            <input type="button" value="Clear" id="clearCanvas">
+            <input type="color" id="fillColor">
+        </nav>
     </main>
-    <script src="./script.js"></script>
+    <script type="module" src="./script.js"></script>
 </body>
 </html>

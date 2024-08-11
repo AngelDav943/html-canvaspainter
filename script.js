@@ -1,162 +1,204 @@
 const canvas = document.getElementById("painting");
-const context = canvas.getContext("2d");
+const context = canvas.getContext("2d", {
+    willReadFrequently: true
+});
 
-const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
+let imageData = context.getImageData(0, 0, canvas.width, canvas.height);
+
+const selects = document.querySelectorAll("div.select")
+const selectValues = {}
+for (const select of selects) {
+    selectValues[select.id] = select.ariaCurrent || ''
+
+    const defaultSelected = select.querySelector(`[value="${select.ariaCurrent}"]`)
+    defaultSelected.classList.add("selected")
+
+    const buttons = select.querySelectorAll("button")
+    for (const button of buttons) {
+        button.onclick = function() {
+            const lastSelected = select.querySelector(".selected")
+            if (lastSelected) lastSelected.classList.remove("selected")
+
+            button.classList.add("selected")
+            selectValues[select.id] = button.value
+            select.ariaCurrent = button.value
+        }
+    }
+}
+console.log(selectValues)
 
 const colorValue = document.getElementById("fillColor")
 
-let mouseClick = false;
+import brush from "./paint-tools/brush.js";
+import flood_fill from "./paint-tools/bucket.js";
+import eraser from "./paint-tools/eraser.js";
+import pencil from "./paint-tools/pencil.js";
+import spray from "./paint-tools/spray.js";
+import { hexToRGBA } from "./paint-tools/utils.js";
 
 function clearCanvas() {
-    imageData.data = imageData.data.fill(0)
+    let newImageData = new ImageData(imageData.width, imageData.height)
+    imageData = newImageData
+    context.putImageData(newImageData, 0, 0);
+}
+document.getElementById("clearCanvas").onclick = clearCanvas
 
-    context.putImageData(imageData, 0, 0);
+let activeClick = false;
+let lastPos = undefined;
+let lastTouches = {};
+
+const tools = {
+    "pencil": pencil,
+    "brush": brush,
+    "spray": spray,
+    "eraser": eraser
 }
 
-function hexToRGBA(color) {
-    if (color[0] == "#") {
-        // hex notation
-        color = color.replace("#", "");
-        var bigint = parseInt(color, 16);
-        var r = (bigint >> 16) & 255;
-        var g = (bigint >> 8) & 255;
-        var b = bigint & 255;
-        return { r: r, g: g, b: b, a: 255 };
-    } else if (color.indexOf("rgba(") == 0) {
-        // already in rgba notation
-        color = color
-            .replace("rgba(", "")
-            .replace(" ", "")
-            .replace(")", "")
-            .split(",");
-        return { r: color[0], g: color[1], b: color[2], a: color[3] * 255 };
-    } else {
-        console.error("warning: can't convert color to rgba: " + color);
-        return { r: 0, g: 0, b: 0, a: 0 };
+const startTools = {
+    "bucket": (pixels, x, y, color, weight) => {
+        flood_fill(canvas, context, x, y, color)
     }
 }
 
-function lerpColor(colorA, colorB, timeFactor) {
-    timeFactor = Math.min(1, Math.max(0, timeFactor))
-    return (1 - timeFactor) * colorA + ( timeFactor * colorB )
-}
-
-function setPixel(pixels, x, y, rgbColor) {
-    if (rgbColor.a == 0) return pixels;
-
-    if (x >= pixels.width || x < 0 || y >= pixels.height || y < 0) return pixels
-
-    const arrayCoords = (y * canvas.width + x) * 4;
-
-
-
-    pixels.data[arrayCoords]     = rgbColor.r;
-    pixels.data[arrayCoords + 1] = rgbColor.g;
-    pixels.data[arrayCoords + 2] = rgbColor.b;
-    pixels.data[arrayCoords + 3] = Math.min(255, pixels.data[arrayCoords + 3] + rgbColor.a);
-
-    return pixels;
-}
-
-function lineX(pixels, fromX, toX, y, color) {
-    let currentPixels = pixels;
-    for (let currentX = fromX; currentX < toX; currentX++) {
-        currentPixels = setPixel(currentPixels, currentX, y, color);
+async function paint(event, isTouch, currentToolList) {
+    if (activeClick == false) return;
+    
+    if (currentToolList == undefined) {
+        currentToolList = tools
     }
-    return currentPixels;
-}
 
-function square(pixels, x, y, height, width, color) {
-    let currentPixels = pixels;
-    for (let targetY = 0; targetY < height; targetY++) {
-        currentPixels = lineX(currentPixels, x, x + width, targetY + y, color);
+    if (currentToolList[selectValues.mode] == undefined) return;
+
+    let identifier = -1
+    if (event.identifier != undefined) {
+        isTouch = true;
+        identifier = event.identifier
     }
-    return currentPixels
-}
 
-function brush(pixels, x, y, color, radius) {
-    let currentPixels = pixels;
-    // currentPixels = lineX(currentPixels, x - radius, x + radius, y, color);
+    let force = 1
+    if (event.force != undefined) force = event.force
 
-    for (let targetY = -radius; targetY < radius; targetY++) {
-        const width = Math.floor(Math.sqrt((radius*radius) - (targetY * targetY)))
-
-        for (let currentX = (x-width); currentX < (x+width); currentX++) {
-
-            let newAlpha = Math.floor(Math.random() * 255)
-
-
-            const newColor = {
-                ...color,
-                a: newAlpha
-            }
-
-            if (newColor.a < 253) newColor.a = 0
-            newColor.a = Math.ceil(newColor.a / 255) * 255
-
-            newColor.a = 50
-
-            currentPixels = setPixel(
-                currentPixels,
-                currentX,
-                (targetY + y),
-                newColor
-            );
+    function setLastPosition() {
+        if (isTouch == true) {
+            lastTouches[identifier] = { y: y, x: x }
+        } else {
+            lastPos = { y: y, x: x }
         }
-
-        // currentPixels = lineX(currentPixels, x - width, x + width, targetY + y, color);
-
+        return { y: y, x: x };
     }
-
-    return currentPixels;
-}
-
-function paint(event) {
-    if (mouseClick == false) return;
-
+    
     const x = Math.floor((event.offsetX / canvas.offsetWidth) * canvas.width);
     const y = Math.floor((event.offsetY / canvas.offsetHeight) * canvas.height);
+    
+    let currentLast = undefined
+    if (isTouch == true) {
+        currentLast = lastTouches[identifier]
+    } else {
+        currentLast = lastPos
+    }
+    
+    imageData = context.getImageData(0, 0, canvas.width, canvas.height)
+    let newPixels = imageData
 
-    // const squareAdded = square(
-    //     imageData,
-    //     x - 25,
-    //     y - 25,
-    //     50,
-    //     50,
-    //     {
-    //         r: 255,
-    //         g: 0,
-    //         b: 0,
-    //         a: 255
-    //     }
-    // )
+    if (currentLast == null) currentLast = setLastPosition();
+    
+    const diffX = x - currentLast?.x
+    const diffY = y - currentLast?.y
+    const distance = Math.sqrt(diffX * diffX + diffY * diffY)
+    const steps = Math.max(1, Math.floor(distance * 2))
+    
+    const weight = Math.floor(parseInt(selectValues.radius) * force)
+    console.log(weight)
 
-    console.log("color", hexToRGBA(colorValue.value))
+    // makes an approximated path from the last position to the new position
+    for (let t = 0; t < steps; t++) {
+        const time = t / steps
 
-    const newPixels = brush(
-        imageData,
-        x,
-        y,
-        hexToRGBA(colorValue.value),
-        25
-    );
+        const lerpX = Math.floor((1 - time) * currentLast.x + (time * x))
+        const lerpY = Math.floor((1 - time) * currentLast.y + (time * y))
 
-    console.log("pixels", newPixels);
 
-    context.putImageData(newPixels, 0, 0);
+        newPixels = await currentToolList[selectValues.mode](
+            newPixels,  // pixels
+            lerpX, lerpY, // coordinates
+            hexToRGBA(colorValue.value), // color
+            weight  // weight
+        );
+    }
 
-    // console.log(arrayCoords, "paint", x, y);
+    setLastPosition()
+    if (newPixels != undefined) context.putImageData(newPixels, 0, 0);
 }
 
 function setMouseStatus(event, status) {
     if (status == true) {
-        mouseClick = true;
-        paint(event);
+        activeClick = true;
+
+        if (startTools[selectValues.mode] != undefined) {
+            paint(event, false, startTools)
+            activeClick = false;
+            return
+        }
+
+        console.log("painting", event.identifier != undefined)
+        paint(event, event.identifier != undefined, tools);
+        
         return;
     }
-    mouseClick = false;
+
+    lastPos = undefined;
+    activeClick = false;
 }
 
+canvas.addEventListener("mouseleave", (e) => setMouseStatus(e, false));
+canvas.addEventListener("mouseout", (e) => setMouseStatus(e, false));
 canvas.addEventListener("mouseup", (e) => setMouseStatus(e, false));
 canvas.addEventListener("mousedown", (e) => setMouseStatus(e, true));
 canvas.addEventListener("mousemove", paint);
+
+function convertTouchToMouse(TouchEvent, callback) {
+    if (TouchEvent == undefined) return
+    if (TouchEvent.touches == undefined || callback == undefined) return
+
+    for (const touch of TouchEvent.touches) {
+        const offset = {
+            offsetX: touch.clientX - canvas.offsetLeft,
+            offsetY: touch.clientY - canvas.offsetTop
+        }
+
+        const x = (offset.offsetX / canvas.offsetWidth) * canvas.width;
+        const y = (offset.offsetY / canvas.offsetHeight) * canvas.height;
+
+        // lastTouches[touch.identifier] = { y: y, x: x }
+
+        callback({
+            ...touch,
+            identifier: touch.identifier,
+            force: touch.force,
+            ...offset
+        }, true)
+    }
+}
+
+function endTouch(event) {
+    for (const touchIdentifier of Object.keys(lastTouches)) {
+        let exists = false
+        for (const touch of event.touches) {
+            if (touch.identifier == touchIdentifier) exists = true
+        }
+
+        if (exists == false) {
+            delete lastTouches[touchIdentifier]
+        }
+    }
+
+    if (event.touches.length < 1) {
+        setMouseStatus(event, false);
+    }
+}
+
+canvas.addEventListener("touchend", endTouch);
+canvas.addEventListener("touchcancel", endTouch);
+
+canvas.addEventListener("touchstart", (event) => convertTouchToMouse(event, setMouseStatus));
+canvas.addEventListener("touchmove", (event) => convertTouchToMouse(event, paint));

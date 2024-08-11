@@ -2,10 +2,29 @@ body {
     margin: 0;
     height: 100dvh;
 
+    --onBackground: #f5fafd;
+    --outline: #ffffff2d;
+    --primary: #4d7dff;
+    --dark-primary: #3c55e6;
+    --transparent-primary: #5c74ff2d;
+
     background: linear-gradient(#2e4568, #181853);
+    background-attachment: fixed;
+}
+
+nav {
+    width: 100%;
+    max-width: 800px;
+
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
 }
 
 main {
+    margin: auto;
+
+    max-width: 800px;
     width: 100%;
     height: 100%;
 
@@ -16,8 +35,46 @@ main {
 }
 
 canvas {
-    max-width: 150vmin;
+    max-width: 130vmin;
     width: 100%;
     background-color: white;
     image-rendering: pixelated;
+}
+
+.select {
+    flex-grow: 1;
+    margin: .5rem;
+    margin-top: 0;
+    border: 1px solid var(--outline);
+    display: flex;
+}
+
+.select button {
+    flex-grow: 1;
+    color: var(--onBackground);
+    background-color: transparent;
+    padding: .3rem;
+    border: none;
+}
+
+.select button:hover {
+    background-color: var(--transparent-primary);
+
+    transition: background .2s ease-out;
+}
+
+.select button.selected {
+    background-color: var(--primary);
+}
+
+input {
+    border: 1px solid var(--outline);
+    margin: .5rem;
+    margin-bottom: 0;
+    background-color: transparent;
+    color: var(--onBackground);
+}
+
+input:hover {
+    background-color: var(--transparent-primary);
 }
